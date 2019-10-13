@@ -7,3 +7,42 @@ def get_movies_from_tastedive(x):
     result = requests_with_caching.get(base_url, d)
     result_json = result.json()
     return result_json
+
+def extract_movie_titles(x):
+    movie_lst = []
+    for movie in x['Similar']['Results']:
+        movie_lst.append(movie['Name'])
+    return movie_lst
+    
+
+def get_related_titles(x):
+    related_movies = []
+    for movie_name in x:
+        init_list = extract_movie_titles(get_movies_from_tastedive(movie_name))
+        for movie_name_init in init_list:
+            if movie_name_init not in related_movies:
+                related_movies.append(movie_name_init)
+    return related_movies
+
+def get_movie_data(x):
+    base_url = 'http://www.omdbapi.com/'
+    d = {'t': x, 'r': 'json'}
+    result = requests_with_caching.get(base_url, d)
+    result_json = result.json()
+    return result_json
+
+def get_movie_rating(x):
+    rating = ''
+    for source in x['Ratings']:
+        if source['Source'] == 'Rotten Tomatoes':
+            rating = source['Value'][:-1]
+    if rating not in '':
+        rating = int(rating)
+    else:
+        rating = 0
+    return rating
+
+def get_sorted_recommendations(x):
+    movies = get_related_titles(x)
+    movies = sorted(movies, key=lambda m: (get_movie_rating(get_movie_data(m)), m), reverse = True)
+    return movies
